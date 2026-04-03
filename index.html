@@ -24,9 +24,12 @@
         .card { background: white; width: 100%; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: pointer; margin-bottom: 20px; transition: 0.2s; position: relative; }
         .card:active { transform: scale(0.98); }
         .kanji { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; text-align: center; }
-        .reading { font-size: 1.2rem; color: #666; opacity: 0; transition: 0.3s; }
-        .meaning { font-size: 1.6rem; color: var(--danger); font-weight: bold; opacity: 0; transition: 0.3s; }
+        
+        /* 트랜지션 효과를 자바스크립트로 제어하기 위해 인라인 스타일과 혼합되지 않게 설정 */
+        .reading { font-size: 1.2rem; color: #666; opacity: 0; }
+        .meaning { font-size: 1.6rem; color: var(--danger); font-weight: bold; opacity: 0; }
         .card.show .reading, .card.show .meaning { opacity: 1; }
+        
         .guide-text { position: absolute; bottom: 15px; font-size: 0.8rem; color: #bbb; }
         
         .btn-group { display: flex; gap: 10px; width: 100%; }
@@ -62,7 +65,7 @@
         학습자: 
         <select id="userSelect" onchange="changeUser()">
             <option value="Migyung">🌸 미경</option>
-            <option value="Partner">⭐ 인영</option>
+            <option value="Partner">⭐ 배우자</option>
         </select>
     </div>
 
@@ -114,7 +117,6 @@
     </div>
 
     <script>
-        // 전체 단어 데이터 (계속 추가 가능)
         const words = [
             {k: "学生", r: "がくせい", m: "학생"},
             {k: "先生", r: "せんせい", m: "선생님"},
@@ -128,7 +130,6 @@
             {k: "友だち", r: "ともだち", m: "친구"}
         ];
 
-        // 5가지 테스트 유형 정의
         const testTypes = [
             { q: 'm', a: 'r', title: 'Q. 한글 뜻 ➔ 일본어(히라가나)' },
             { q: 'm', a: 'k', title: 'Q. 한글 뜻 ➔ 한자' },
@@ -140,12 +141,10 @@
         let currentUser = 'Migyung';
         let currentMode = 'study';
         
-        // 학습 상태 변수
         let unlearnedIndices = [];
         let currentStudyIdx = 0;
         let currentTestTargetIndex = null;
 
-        // --- 데이터 로드 및 저장 ---
         function getLearnedIndices(user) {
             return JSON.parse(localStorage.getItem('n5_learned_' + user)) || [];
         }
@@ -160,7 +159,6 @@
             document.getElementById('score-Partner').innerText = getLearnedIndices('Partner').length + "개";
         }
 
-        // --- 모드 및 사용자 전환 ---
         function changeUser() {
             currentUser = document.getElementById('userSelect').value;
             setMode(currentMode);
@@ -182,10 +180,8 @@
             }
         }
 
-        // --- 학습 모드 로직 ---
         function initStudyMode() {
             const learned = getLearnedIndices(currentUser);
-            // 전체 단어 중 외우지 않은 단어의 인덱스만 필터링
             unlearnedIndices = words.map((_, i) => i).filter(i => !learned.includes(i));
             
             if (unlearnedIndices.length === 0) {
@@ -202,10 +198,26 @@
         function showStudyWord() {
             const wordIdx = unlearnedIndices[currentStudyIdx % unlearnedIndices.length];
             const word = words[wordIdx];
+            
+            const card = document.getElementById('wordCard');
+            const reading = document.getElementById('reading');
+            const meaning = document.getElementById('meaning');
+
+            // 애니메이션 끄고 즉시 숨기기 (깜빡임 방지 핵심 로직)
+            reading.style.transition = 'none';
+            meaning.style.transition = 'none';
+            card.classList.remove('show');
+
+            // 데이터 즉시 교체
             document.getElementById('kanji').innerText = word.k;
-            document.getElementById('reading').innerText = word.r;
-            document.getElementById('meaning').innerText = word.m;
-            document.getElementById('wordCard').classList.remove('show');
+            reading.innerText = word.r;
+            meaning.innerText = word.m;
+
+            // 브라우저 렌더링 후 다시 부드러운 애니메이션 켜기
+            setTimeout(() => {
+                reading.style.transition = '0.3s';
+                meaning.style.transition = '0.3s';
+            }, 50);
         }
 
         function nextStudyWord(isLearned) {
@@ -215,25 +227,21 @@
                 learned.push(wordIdx);
                 saveLearnedIndices(currentUser, learned);
                 
-                // 외운 단어를 배열에서 제거
                 unlearnedIndices.splice(currentStudyIdx % unlearnedIndices.length, 1);
                 
                 if (unlearnedIndices.length === 0) {
-                    initStudyMode(); // 전부 다 외웠는지 체크
+                    initStudyMode(); 
                     return;
                 }
-                // 배열 길이가 줄어들었으므로 currentStudyIdx를 증가시키지 않아도 자연스럽게 다음 단어가 됨
             } else {
                 currentStudyIdx++;
             }
             showStudyWord();
         }
 
-        // --- 테스트 모드 로직 ---
         function initTestMode() {
             const learned = getLearnedIndices(currentUser);
             if (learned.length < 4) {
-                // 선택지 4개를 만들기 위해 최소 4개의 단어 데이터가 필요
                 document.getElementById('testContent').style.display = 'none';
                 document.getElementById('testEmpty').style.display = 'block';
                 document.getElementById('testEmpty').innerHTML = "테스트를 보려면 최소 4개 이상의 단어를 완벽히 외워야 합니다.<br>학습 모드로 돌아가세요!";
@@ -249,30 +257,19 @@
             const learned = getLearnedIndices(currentUser);
             if(learned.length === 0) { initTestMode(); return; }
 
-            // 1. 문제로 낼 단어 랜덤 선택 (학습한 단어 중에서만)
             currentTestTargetIndex = learned[Math.floor(Math.random() * learned.length)];
             const targetWord = words[currentTestTargetIndex];
-
-            // 2. 5가지 출제 패턴 중 랜덤 선택
             const typeInfo = testTypes[Math.floor(Math.random() * testTypes.length)];
 
-            // 3. 오답 선택지 3개 생성 (전체 단어 중 정답을 제외하고 랜덤)
             let options = [targetWord];
             let pool = words.filter((_, i) => i !== currentTestTargetIndex);
             
-            // 배열 섞기 (Fisher-Yates 간략화)
             pool.sort(() => 0.5 - Math.random());
             options.push(pool[0], pool[1], pool[2]);
-
-            // 선택지 4개 섞기
             options.sort(() => 0.5 - Math.random());
 
-            // 4. 화면 렌더링
             document.getElementById('testHint').innerText = typeInfo.title;
-            
-            // 문제 출력 로직: 한자를 문제로 냈는데 한자가 없고 히라가나랑 똑같을 경우 예외 처리
-            let questionText = targetWord[typeInfo.q];
-            document.getElementById('testQuestion').innerText = questionText;
+            document.getElementById('testQuestion').innerText = targetWord[typeInfo.q];
 
             const grid = document.getElementById('optionsGrid');
             grid.innerHTML = '';
@@ -289,22 +286,24 @@
         function checkAnswer(isCorrect, wordIdx) {
             if (isCorrect) {
                 alert("⭕ 정답입니다!");
-                generateQuestion(); // 다음 문제
+                generateQuestion(); 
             } else {
                 alert("❌ 틀렸습니다!\n이 단어는 다시 '학습 모드'로 이동됩니다.");
-                
-                // 틀리면 학습 리스트에서 제거 (강등)
                 let learned = getLearnedIndices(currentUser);
                 learned = learned.filter(i => i !== wordIdx);
                 saveLearnedIndices(currentUser, learned);
-                
-                // 남은 단어가 부족해지면 테스트 모드 초기화
                 initTestMode(); 
             }
         }
 
-        // 초기 실행
         updateScoreBoard();
+        
+        // CSS 기본 트랜지션 초기 세팅
+        setTimeout(() => {
+            document.getElementById('reading').style.transition = '0.3s';
+            document.getElementById('meaning').style.transition = '0.3s';
+        }, 100);
+        
         setMode('study');
     </script>
 </body>
