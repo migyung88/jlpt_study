@@ -35,6 +35,10 @@
         .btn-success { background: var(--success); }
         .btn-group button:active { transform: translateY(2px); box-shadow: none; }
 
+        /* 초기화 버튼 */
+        .btn-reset { margin-top: 15px; padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; background: transparent; color: #777; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .btn-reset:hover { background: #e0e0e0; color: #333; border-color: #aaa; }
+
         /* 테스트 모드 UI */
         .test-box { background: white; width: 100%; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; box-sizing: border-box; }
         .test-hint { font-size: 0.9rem; color: var(--primary); font-weight: bold; margin-bottom: 15px; }
@@ -43,7 +47,6 @@
         
         .option-btn { padding: 15px 10px; background: #f8f9fa; border: 2px solid #eee; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; color: #333; outline: none; -webkit-tap-highlight-color: transparent; }
         
-        /* 마우스가 있는 PC에서만 hover 효과 적용 (모바일 터치 잔상 해결) */
         @media (hover: hover) and (pointer: fine) {
             .option-btn:hover { background: #e9ecef; border-color: #ddd; }
         }
@@ -87,7 +90,7 @@
         학습자: 
         <select id="userSelect" onchange="changeUser()">
             <option value="Migyung">🌸 미경</option>
-            <option value="Partner">⭐ 배우자</option>
+            <option value="Inyoung">⭐ 인영</option>
         </select>
     </div>
 
@@ -108,9 +111,15 @@
                 <button class="btn-fail" onclick="nextStudyWord(false)">아직 몰라요</button>
                 <button class="btn-success" onclick="nextStudyWord(true)">완벽히 외웠어요!</button>
             </div>
+            <div style="text-align: center;">
+                <button class="btn-reset" onclick="resetLearnedWords()">🔄 외운 단어 초기화</button>
+            </div>
         </div>
         <div id="studyEmpty" class="empty-msg" style="display: none;">
             🎉 모든 단어를 완벽하게 외웠습니다!<br>실전 테스트에 도전해보세요.
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn-reset" onclick="resetLearnedWords()">🔄 다시 처음부터 학습하기</button>
+            </div>
         </div>
     </div>
 
@@ -133,8 +142,8 @@
             <span class="score-val" id="score-Migyung">0개</span>
         </div>
         <div class="score-row">
-            <span class="score-name">⭐ 배우자</span>
-            <span class="score-val" id="score-Partner">0개</span>
+            <span class="score-name">⭐ 인영</span>
+            <span class="score-val" id="score-Inyoung">0개</span>
         </div>
     </div>
 
@@ -171,7 +180,7 @@
         let unlearnedIndices = [];
         let currentStudyIdx = 0;
         let currentTestTargetIndex = null;
-        let isPopupActive = false; // 팝업이 떠 있는 동안 중복 클릭 방지
+        let isPopupActive = false;
 
         function getLearnedIndices(user) {
             return JSON.parse(localStorage.getItem('n5_learned_' + user)) || [];
@@ -184,7 +193,7 @@
 
         function updateScoreBoard() {
             document.getElementById('score-Migyung').innerText = getLearnedIndices('Migyung').length + "개";
-            document.getElementById('score-Partner').innerText = getLearnedIndices('Partner').length + "개";
+            document.getElementById('score-Inyoung').innerText = getLearnedIndices('Inyoung').length + "개";
         }
 
         function changeUser() {
@@ -264,6 +273,17 @@
             showStudyWord();
         }
 
+        // 단어 초기화 기능 (새로 추가됨)
+        function resetLearnedWords() {
+            const userName = currentUser === 'Migyung' ? '미경' : '인영';
+            if (confirm(`${userName}님의 완벽히 외운 단어 기록을 모두 초기화하시겠습니까?\n(외운 단어들이 다시 학습 모드로 돌아옵니다)`)) {
+                localStorage.setItem('n5_learned_' + currentUser, JSON.stringify([]));
+                alert("초기화가 완료되었습니다. 처음부터 다시 학습을 시작합니다!");
+                initStudyMode();
+                updateScoreBoard();
+            }
+        }
+
         function initTestMode() {
             const learned = getLearnedIndices(currentUser);
             if (learned.length < 4) {
@@ -303,17 +323,15 @@
                 btn.className = 'option-btn';
                 btn.innerText = opt[typeInfo.a];
                 
-                // 버튼 클릭 이벤트
                 btn.onclick = (e) => {
-                    if(isPopupActive) return; // 팝업 진행 중 중복 클릭 방지
-                    e.target.blur(); // 터치 후 포커스(음영) 즉시 제거
+                    if(isPopupActive) return;
+                    e.target.blur();
                     handleAnswer(opt === targetWord, currentTestTargetIndex);
                 };
                 grid.appendChild(btn);
             });
         }
 
-        // 레이어 팝업 노출 및 정답 처리 로직
         function handleAnswer(isCorrect, wordIdx) {
             isPopupActive = true;
             const popup = document.getElementById('layerPopup');
@@ -327,10 +345,8 @@
                 content.innerHTML = `❌ 틀렸습니다!<div class="popup-subtext">학습 모드로 다시 이동됩니다.</div>`;
             }
 
-            // 팝업 띄우기
             popup.classList.add('show');
 
-            // 1초(1000ms) 뒤에 팝업 닫고 다음 로직 실행
             setTimeout(() => {
                 popup.classList.remove('show');
                 isPopupActive = false;
@@ -338,7 +354,6 @@
                 if (isCorrect) {
                     generateQuestion(); 
                 } else {
-                    // 틀렸을 경우 학습 목록에서 제외하고 재설정
                     let learned = getLearnedIndices(currentUser);
                     learned = learned.filter(i => i !== wordIdx);
                     saveLearnedIndices(currentUser, learned);
