@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JLPT N5 단어 배틀</title>
+    <style>
+        :root { --primary: #4a90e2; --success: #2ecc71; --danger: #e74c3c; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; margin: 0; }
+        h2 { margin-top: 10px; color: #2c3e50; }
+        
+        .user-selector { margin-bottom: 20px; padding: 10px 15px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: bold; }
+        .user-selector select { padding: 5px 10px; border-radius: 5px; border: 1px solid #ddd; font-size: 1rem; margin-left: 10px; }
+        
+        .card { background: white; width: 300px; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: pointer; margin-bottom: 25px; transition: 0.2s; position: relative; border: 2px solid transparent; }
+        .card:active { transform: scale(0.98); }
+        .kanji { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; }
+        .reading { font-size: 1.2rem; color: #666; opacity: 0; transition: 0.3s; }
+        .meaning { font-size: 1.6rem; color: var(--danger); font-weight: bold; opacity: 0; transition: 0.3s; }
+        .card.show .reading, .card.show .meaning { opacity: 1; }
+        .guide-text { position: absolute; bottom: 15px; font-size: 0.8rem; color: #bbb; }
+        
+        .btn-group { display: flex; gap: 15px; margin-bottom: 30px; }
+        button { padding: 12px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1rem; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-fail { background: #95a5a6; }
+        .btn-success { background: var(--success); }
+        button:active { transform: translateY(2px); box-shadow: none; }
+
+        .scoreboard { width: 300px; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .score-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 1.1rem; }
+        .score-row:last-child { border-bottom: none; }
+        .score-name { font-weight: bold; }
+        .score-val { color: var(--primary); font-weight: 800; }
+    </style>
+</head>
+<body>
+
+    <h2>🔥 N5 단어 마스터</h2>
+
+    <div class="user-selector">
+        학습자: 
+        <select id="userSelect" onchange="changeUser()">
+            <option value="Migyung">🌸 미경</option>
+            <option value="Partner">⭐ 배우자</option>
+        </select>
+    </div>
+    
+    <div class="card" id="wordCard" onclick="this.classList.toggle('show')">
+        <div class="kanji" id="kanji">-</div>
+        <div class="reading" id="reading">-</div>
+        <div class="meaning" id="meaning">-</div>
+        <div class="guide-text">카드를 터치하면 정답 공개</div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-fail" onclick="nextWord(false)">아직 몰라요</button>
+        <button class="btn-success" onclick="nextWord(true)">완벽히 외웠어요!</button>
+    </div>
+
+    <div class="scoreboard">
+        <h3 style="margin-top:0; font-size: 1.2rem; text-align: center;">🏆 스코어보드</h3>
+        <div class="score-row">
+            <span class="score-name">🌸 미경</span>
+            <span class="score-val" id="score-Migyung">0개</span>
+        </div>
+        <div class="score-row">
+            <span class="score-name">⭐ 배우자</span>
+            <span class="score-val" id="score-Partner">0개</span>
+        </div>
+    </div>
+
+    <script>
+        // 여기에 학습할 단어를 계속 추가하시면 됩니다.
+        const words = [
+            {k: "学生", r: "がくせい", m: "학생"},
+            {k: "先生", r: "せんせい", m: "선생님"},
+            {k: "学校", r: "がっこう", m: "학교"},
+            {k: "日本語", r: "にほんご", m: "일본어"},
+            {k: "食べる", r: "たべる", m: "먹다"},
+            {k: "飲む", r: "のむ", m: "마시다"},
+            {k: "見る", r: "みる", m: "보다"},
+            {k: "行く", r: "いく", m: "가다"},
+            {k: "本", r: "ほん", m: "책"},
+            {k: "友だち", r: "ともだち", m: "친구"}
+        ];
+
+        let currentUser = 'Migyung';
+        let currentIndex = 0;
+
+        function loadScores() {
+            document.getElementById('score-Migyung').innerText = (localStorage.getItem('n5_score_Migyung') || 0) + "개";
+            document.getElementById('score-Partner').innerText = (localStorage.getItem('n5_score_Partner') || 0) + "개";
+        }
+
+        function changeUser() {
+            currentUser = document.getElementById('userSelect').value;
+            // 사용자 변경 시 카드 숨김 처리
+            document.getElementById('wordCard').classList.remove('show');
+        }
+
+        function updateDisplay() {
+            const word = words[currentIndex % words.length];
+            document.getElementById('kanji').innerText = word.k;
+            document.getElementById('reading').innerText = word.r;
+            document.getElementById('meaning').innerText = word.m;
+            document.getElementById('wordCard').classList.remove('show');
+            loadScores();
+        }
+
+        function nextWord(isLearned) {
+            if(isLearned) {
+                let currentScore = parseInt(localStorage.getItem('n5_score_' + currentUser)) || 0;
+                localStorage.setItem('n5_score_' + currentUser, currentScore + 1);
+            }
+            currentIndex++;
+            updateDisplay();
+        }
+
+        // 초기 화면 세팅
+        loadScores();
+        updateDisplay();
+    </script>
+</body>
+</html>
