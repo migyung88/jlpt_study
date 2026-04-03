@@ -3,34 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JLPT N5 단어 배틀</title>
+    <title>JLPT N5 단어 마스터 & 테스트</title>
     <style>
-        :root { --primary: #4a90e2; --success: #2ecc71; --danger: #e74c3c; }
-        body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; margin: 0; }
-        h2 { margin-top: 10px; color: #2c3e50; }
+        :root { --primary: #4a90e2; --success: #2ecc71; --danger: #e74c3c; --bg: #f0f2f5; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; margin: 0; }
+        h2 { margin-top: 10px; color: #2c3e50; text-align: center; }
         
-        .user-selector { margin-bottom: 20px; padding: 10px 15px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: bold; }
+        /* 공통 UI */
+        .user-selector { margin-bottom: 15px; padding: 10px 15px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: bold; }
         .user-selector select { padding: 5px 10px; border-radius: 5px; border: 1px solid #ddd; font-size: 1rem; margin-left: 10px; }
         
-        .card { background: white; width: 300px; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: pointer; margin-bottom: 25px; transition: 0.2s; position: relative; border: 2px solid transparent; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; background: #ddd; color: #555; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 6px rgba(74, 144, 226, 0.3); }
+
+        .section { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 350px; }
+        .section.active { display: flex; }
+
+        /* 학습 모드 UI */
+        .card { background: white; width: 100%; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: pointer; margin-bottom: 20px; transition: 0.2s; position: relative; }
         .card:active { transform: scale(0.98); }
-        .kanji { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; }
+        .kanji { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; text-align: center; }
         .reading { font-size: 1.2rem; color: #666; opacity: 0; transition: 0.3s; }
         .meaning { font-size: 1.6rem; color: var(--danger); font-weight: bold; opacity: 0; transition: 0.3s; }
         .card.show .reading, .card.show .meaning { opacity: 1; }
         .guide-text { position: absolute; bottom: 15px; font-size: 0.8rem; color: #bbb; }
         
-        .btn-group { display: flex; gap: 15px; margin-bottom: 30px; }
-        button { padding: 12px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1rem; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-group { display: flex; gap: 10px; width: 100%; }
+        .btn-group button { flex: 1; padding: 15px 0; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1rem; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .btn-fail { background: #95a5a6; }
         .btn-success { background: var(--success); }
-        button:active { transform: translateY(2px); box-shadow: none; }
+        .btn-group button:active { transform: translateY(2px); box-shadow: none; }
 
-        .scoreboard { width: 300px; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        /* 테스트 모드 UI */
+        .test-box { background: white; width: 100%; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; box-sizing: border-box; }
+        .test-hint { font-size: 0.9rem; color: var(--primary); font-weight: bold; margin-bottom: 15px; }
+        .test-question { font-size: 3rem; font-weight: 800; margin-bottom: 25px; color: #333; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .option-btn { padding: 15px 10px; background: #f8f9fa; border: 2px solid #eee; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; color: #333; }
+        .option-btn:hover { background: #e9ecef; border-color: #ddd; }
+        .option-btn:active { transform: scale(0.95); }
+
+        /* 스코어보드 */
+        .scoreboard { width: 100%; max-width: 350px; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 30px; box-sizing: border-box; }
         .score-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 1.1rem; }
         .score-row:last-child { border-bottom: none; }
         .score-name { font-weight: bold; }
         .score-val { color: var(--primary); font-weight: 800; }
+        
+        .empty-msg { font-size: 1.2rem; color: #7f8c8d; text-align: center; padding: 40px 0; }
     </style>
 </head>
 <body>
@@ -44,21 +65,44 @@
             <option value="Partner">⭐ 배우자</option>
         </select>
     </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" id="tabStudy" onclick="setMode('study')">📖 학습 모드</button>
+        <button class="tab-btn" id="tabTest" onclick="setMode('test')">🎯 실전 테스트</button>
+    </div>
     
-    <div class="card" id="wordCard" onclick="this.classList.toggle('show')">
-        <div class="kanji" id="kanji">-</div>
-        <div class="reading" id="reading">-</div>
-        <div class="meaning" id="meaning">-</div>
-        <div class="guide-text">카드를 터치하면 정답 공개</div>
+    <div id="sectionStudy" class="section active">
+        <div id="studyContent" style="width: 100%;">
+            <div class="card" id="wordCard" onclick="this.classList.toggle('show')">
+                <div class="kanji" id="kanji">-</div>
+                <div class="reading" id="reading">-</div>
+                <div class="meaning" id="meaning">-</div>
+                <div class="guide-text">카드를 터치하면 정답 공개</div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-fail" onclick="nextStudyWord(false)">아직 몰라요</button>
+                <button class="btn-success" onclick="nextStudyWord(true)">완벽히 외웠어요!</button>
+            </div>
+        </div>
+        <div id="studyEmpty" class="empty-msg" style="display: none;">
+            🎉 모든 단어를 완벽하게 외웠습니다!<br>실전 테스트에 도전해보세요.
+        </div>
     </div>
 
-    <div class="btn-group">
-        <button class="btn-fail" onclick="nextWord(false)">아직 몰라요</button>
-        <button class="btn-success" onclick="nextWord(true)">완벽히 외웠어요!</button>
+    <div id="sectionTest" class="section">
+        <div id="testContent" class="test-box" style="display: none;">
+            <div class="test-hint" id="testHint">한글 뜻을 보고 일본어 고르기</div>
+            <div class="test-question" id="testQuestion">학생</div>
+            <div class="options-grid" id="optionsGrid">
+                </div>
+        </div>
+        <div id="testEmpty" class="empty-msg" style="display: none;">
+            아직 완벽하게 외운 단어가 없습니다.<br>학습 모드에서 단어를 먼저 외워주세요!
+        </div>
     </div>
 
     <div class="scoreboard">
-        <h3 style="margin-top:0; font-size: 1.2rem; text-align: center;">🏆 스코어보드</h3>
+        <h3 style="margin-top:0; font-size: 1.2rem; text-align: center;">🏆 완벽 암기(테스트 가능) 단어 수</h3>
         <div class="score-row">
             <span class="score-name">🌸 미경</span>
             <span class="score-val" id="score-Migyung">0개</span>
@@ -70,7 +114,7 @@
     </div>
 
     <script>
-        // 여기에 학습할 단어를 계속 추가하시면 됩니다.
+        // 전체 단어 데이터 (계속 추가 가능)
         const words = [
             {k: "学生", r: "がくせい", m: "학생"},
             {k: "先生", r: "せんせい", m: "선생님"},
@@ -84,41 +128,184 @@
             {k: "友だち", r: "ともだち", m: "친구"}
         ];
 
-        let currentUser = 'Migyung';
-        let currentIndex = 0;
+        // 5가지 테스트 유형 정의
+        const testTypes = [
+            { q: 'm', a: 'r', title: 'Q. 한글 뜻 ➔ 일본어(히라가나)' },
+            { q: 'm', a: 'k', title: 'Q. 한글 뜻 ➔ 한자' },
+            { q: 'k', a: 'r', title: 'Q. 한자 ➔ 일본어(히라가나)' },
+            { q: 'k', a: 'm', title: 'Q. 한자 ➔ 한글 뜻' },
+            { q: 'r', a: 'm', title: 'Q. 히라가나 ➔ 한글 뜻' }
+        ];
 
-        function loadScores() {
-            document.getElementById('score-Migyung').innerText = (localStorage.getItem('n5_score_Migyung') || 0) + "개";
-            document.getElementById('score-Partner').innerText = (localStorage.getItem('n5_score_Partner') || 0) + "개";
+        let currentUser = 'Migyung';
+        let currentMode = 'study';
+        
+        // 학습 상태 변수
+        let unlearnedIndices = [];
+        let currentStudyIdx = 0;
+        let currentTestTargetIndex = null;
+
+        // --- 데이터 로드 및 저장 ---
+        function getLearnedIndices(user) {
+            return JSON.parse(localStorage.getItem('n5_learned_' + user)) || [];
         }
 
+        function saveLearnedIndices(user, arr) {
+            localStorage.setItem('n5_learned_' + user, JSON.stringify(arr));
+            updateScoreBoard();
+        }
+
+        function updateScoreBoard() {
+            document.getElementById('score-Migyung').innerText = getLearnedIndices('Migyung').length + "개";
+            document.getElementById('score-Partner').innerText = getLearnedIndices('Partner').length + "개";
+        }
+
+        // --- 모드 및 사용자 전환 ---
         function changeUser() {
             currentUser = document.getElementById('userSelect').value;
-            // 사용자 변경 시 카드 숨김 처리
-            document.getElementById('wordCard').classList.remove('show');
+            setMode(currentMode);
         }
 
-        function updateDisplay() {
-            const word = words[currentIndex % words.length];
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('tabStudy').classList.toggle('active', mode === 'study');
+            document.getElementById('tabTest').classList.toggle('active', mode === 'test');
+            document.getElementById('sectionStudy').classList.toggle('active', mode === 'study');
+            document.getElementById('sectionTest').classList.toggle('active', mode === 'test');
+            
+            updateScoreBoard();
+
+            if (mode === 'study') {
+                initStudyMode();
+            } else {
+                initTestMode();
+            }
+        }
+
+        // --- 학습 모드 로직 ---
+        function initStudyMode() {
+            const learned = getLearnedIndices(currentUser);
+            // 전체 단어 중 외우지 않은 단어의 인덱스만 필터링
+            unlearnedIndices = words.map((_, i) => i).filter(i => !learned.includes(i));
+            
+            if (unlearnedIndices.length === 0) {
+                document.getElementById('studyContent').style.display = 'none';
+                document.getElementById('studyEmpty').style.display = 'block';
+            } else {
+                document.getElementById('studyContent').style.display = 'block';
+                document.getElementById('studyEmpty').style.display = 'none';
+                currentStudyIdx = 0;
+                showStudyWord();
+            }
+        }
+
+        function showStudyWord() {
+            const wordIdx = unlearnedIndices[currentStudyIdx % unlearnedIndices.length];
+            const word = words[wordIdx];
             document.getElementById('kanji').innerText = word.k;
             document.getElementById('reading').innerText = word.r;
             document.getElementById('meaning').innerText = word.m;
             document.getElementById('wordCard').classList.remove('show');
-            loadScores();
         }
 
-        function nextWord(isLearned) {
-            if(isLearned) {
-                let currentScore = parseInt(localStorage.getItem('n5_score_' + currentUser)) || 0;
-                localStorage.setItem('n5_score_' + currentUser, currentScore + 1);
+        function nextStudyWord(isLearned) {
+            if (isLearned) {
+                const learned = getLearnedIndices(currentUser);
+                const wordIdx = unlearnedIndices[currentStudyIdx % unlearnedIndices.length];
+                learned.push(wordIdx);
+                saveLearnedIndices(currentUser, learned);
+                
+                // 외운 단어를 배열에서 제거
+                unlearnedIndices.splice(currentStudyIdx % unlearnedIndices.length, 1);
+                
+                if (unlearnedIndices.length === 0) {
+                    initStudyMode(); // 전부 다 외웠는지 체크
+                    return;
+                }
+                // 배열 길이가 줄어들었으므로 currentStudyIdx를 증가시키지 않아도 자연스럽게 다음 단어가 됨
+            } else {
+                currentStudyIdx++;
             }
-            currentIndex++;
-            updateDisplay();
+            showStudyWord();
         }
 
-        // 초기 화면 세팅
-        loadScores();
-        updateDisplay();
+        // --- 테스트 모드 로직 ---
+        function initTestMode() {
+            const learned = getLearnedIndices(currentUser);
+            if (learned.length < 4) {
+                // 선택지 4개를 만들기 위해 최소 4개의 단어 데이터가 필요
+                document.getElementById('testContent').style.display = 'none';
+                document.getElementById('testEmpty').style.display = 'block';
+                document.getElementById('testEmpty').innerHTML = "테스트를 보려면 최소 4개 이상의 단어를 완벽히 외워야 합니다.<br>학습 모드로 돌아가세요!";
+                return;
+            }
+
+            document.getElementById('testContent').style.display = 'block';
+            document.getElementById('testEmpty').style.display = 'none';
+            generateQuestion();
+        }
+
+        function generateQuestion() {
+            const learned = getLearnedIndices(currentUser);
+            if(learned.length === 0) { initTestMode(); return; }
+
+            // 1. 문제로 낼 단어 랜덤 선택 (학습한 단어 중에서만)
+            currentTestTargetIndex = learned[Math.floor(Math.random() * learned.length)];
+            const targetWord = words[currentTestTargetIndex];
+
+            // 2. 5가지 출제 패턴 중 랜덤 선택
+            const typeInfo = testTypes[Math.floor(Math.random() * testTypes.length)];
+
+            // 3. 오답 선택지 3개 생성 (전체 단어 중 정답을 제외하고 랜덤)
+            let options = [targetWord];
+            let pool = words.filter((_, i) => i !== currentTestTargetIndex);
+            
+            // 배열 섞기 (Fisher-Yates 간략화)
+            pool.sort(() => 0.5 - Math.random());
+            options.push(pool[0], pool[1], pool[2]);
+
+            // 선택지 4개 섞기
+            options.sort(() => 0.5 - Math.random());
+
+            // 4. 화면 렌더링
+            document.getElementById('testHint').innerText = typeInfo.title;
+            
+            // 문제 출력 로직: 한자를 문제로 냈는데 한자가 없고 히라가나랑 똑같을 경우 예외 처리
+            let questionText = targetWord[typeInfo.q];
+            document.getElementById('testQuestion').innerText = questionText;
+
+            const grid = document.getElementById('optionsGrid');
+            grid.innerHTML = '';
+            
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt[typeInfo.a];
+                btn.onclick = () => checkAnswer(opt === targetWord, currentTestTargetIndex);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(isCorrect, wordIdx) {
+            if (isCorrect) {
+                alert("⭕ 정답입니다!");
+                generateQuestion(); // 다음 문제
+            } else {
+                alert("❌ 틀렸습니다!\n이 단어는 다시 '학습 모드'로 이동됩니다.");
+                
+                // 틀리면 학습 리스트에서 제거 (강등)
+                let learned = getLearnedIndices(currentUser);
+                learned = learned.filter(i => i !== wordIdx);
+                saveLearnedIndices(currentUser, learned);
+                
+                // 남은 단어가 부족해지면 테스트 모드 초기화
+                initTestMode(); 
+            }
+        }
+
+        // 초기 실행
+        updateScoreBoard();
+        setMode('study');
     </script>
 </body>
 </html>
